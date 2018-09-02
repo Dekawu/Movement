@@ -30,8 +30,10 @@ public class Player : MonoBehaviour {
                 Ray ray = new Ray(transform.position, _camera.transform.forward);
                 RaycastHit[] hits = Physics.RaycastAll(ray);
                 foreach (var hit in hits) {
-                    if (hit.transform.parent.transform.gameObject.tag == "Enemy") {
-                        _camera.GetComponent<CameraControl>().TargetLockOn(hit.transform);
+                    if (hit.transform.parent != null) {
+                        if (hit.transform.parent.transform.gameObject.tag == "Enemy") {
+                            _camera.GetComponent<CameraControl>().TargetLockOn(hit.transform);
+                        }
                     }
                 }
             }
