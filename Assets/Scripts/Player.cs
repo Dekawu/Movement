@@ -1,39 +1,40 @@
 ﻿using UnityEngine;
 
 public class Player : MonoBehaviour {
-    public float _speed;
-    public float _gravityStrength;
-    public float _jumpHeight;
-    public float _dashDistance;
-    public float _dashCooldown;
-    public float _dashTimeLength;
-    public GameObject _camera;
-
-    private Vector3 _dashDirection;
-    private bool _dashing;
-    private float _dashTimeRemaining;
-    private float _dashCooldownRemaining = 0;
-    private Vector3 _gravityVelocity = Vector3.zero;
-    private CharacterController _characterController;
+    public float MovementSpeed;
+    public float JumpHeight;
+    public float DashDistance;
+    public float DashCooldown;
+    public float DashLength;
+    public float GravityStrength;
+    public Transform Camera;
 
     private Vector3 _movement;
+    private bool _dashing;
+    private float _dashTimeRemaining;
+    private float _dashCooldownRemaining;
+    private Vector3 _dashDirection;
+    private Vector3 _gravityVelocity;
+    private CharacterController _characterController;
+    private PlayerCameraController _cameraController;
 
     void Start() {
+        _dashCooldownRemaining = 0;
+        _gravityVelocity = Vector3.zero;
         _characterController = GetComponent<CharacterController>();
+        _cameraController = Camera.GetComponent<PlayerCameraController>();
     }
 
     void Update() {
         if (Input.GetKeyDown(KeyCode.Tab)) {
-            if (_camera.GetComponent<CameraControl>().TargetLocked) {
-                _camera.GetComponent<CameraControl>().TargetUnlock();
+            if (_cameraController.TargetLocked) {
+                _cameraController.TargetUnlock();
             } else {
-                Ray ray = new Ray(transform.position, _camera.transform.forward);
+                Ray ray = new Ray(transform.position, Camera.forward);
                 RaycastHit[] hits = Physics.RaycastAll(ray);
                 foreach (var hit in hits) {
-                    if (hit.transform.parent != null) {
-                        if (hit.transform.parent.transform.gameObject.tag == "Enemy") {
-                            _camera.GetComponent<CameraControl>().TargetLockOn(hit.transform);
-                        }
+                    if (hit.transform.GetComponent<Targetable>()) {
+                        _cameraController.TargetLockOn(hit.transform);
                     }
                 }
             }
@@ -45,7 +46,7 @@ public class Player : MonoBehaviour {
         _movement = new Vector3(Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical"));
 
         // Move toward camera's facing direction
-        _movement = Quaternion.Euler(0, _camera.transform.eulerAngles.y, 0) * _movement;
+        _movement = Quaternion.Euler(0, Camera.eulerAngles.y, 0) * _movement;
 
         // Character facing direction
         if (_movement != Vector3.zero)
@@ -53,7 +54,7 @@ public class Player : MonoBehaviour {
 
         // Character gravity
         if (!_dashing) {
-            _gravityVelocity.y += _gravityStrength * Time.fixedDeltaTime;
+            _gravityVelocity.y += GravityStrength * Time.fixedDeltaTime;
             _characterController.Move(_gravityVelocity * Time.fixedDeltaTime);
         }
         if ((_characterController.isGrounded && _gravityVelocity.y < 0) || _dashing) {
@@ -62,31 +63,24 @@ public class Player : MonoBehaviour {
 
         // Character Jump
         if (Input.GetButtonDown("Jump") && _characterController.isGrounded) {
-            _gravityVelocity.y += Mathf.Sqrt(_jumpHeight * -2f * _gravityStrength);
+            _gravityVelocity.y += Mathf.Sqrt(JumpHeight * -2f * GravityStrength);
         }
 
         // Character Dash
         if (Input.GetKey(KeyCode.LeftShift) && _dashCooldownRemaining <= 0) {
             _dashing = true;
-            _dashCooldownRemaining = _dashCooldown;
-            _dashTimeRemaining = _dashTimeLength;
+            _dashCooldownRemaining = DashCooldown;
+            _dashTimeRemaining = DashLength;
             _dashDirection = transform.forward;
         } else if (_dashTimeRemaining <= 0 && _dashing) {
             _dashing = false;
         } else if (_dashing) {
-            _movement = _dashDistance * _dashDirection;
+            _movement = DashDistance * _dashDirection;
         }
 
-        _dashCooldownRemaining = Mathf.Clamp(_dashCooldownRemaining - Time.fixedDeltaTime, 0, _dashCooldown);
-        _dashTimeRemaining = Mathf.Clamp(_dashTimeRemaining - Time.fixedDeltaTime, 0, _dashTimeLength);
+        _dashCooldownRemaining = Mathf.Clamp(_dashCooldownRemaining - Time.fixedDeltaTime, 0, DashCooldown);
+        _dashTimeRemaining = Mathf.Clamp(_dashTimeRemaining - Time.fixedDeltaTime, 0, DashLength);
 
-        _characterController.Move(_movement * Time.fixedDeltaTime * _speed);
+        _characterController.Move(_movement * Time.fixedDeltaTime * MovementSpeed);
     }
-
-
-    void LateUpdate() {
-
-    }
-
-
 }
